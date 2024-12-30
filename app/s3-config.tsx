@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   S3ServiceException,
   paginateListObjectsV2,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 
 interface UploadFileParams {
@@ -18,6 +19,23 @@ const client = new S3Client({
   },
   region: "eu-west-1",
 });
+
+
+const input = { // ListObjectsV2Request
+  Bucket: "daire-photo", // required
+  // Delimiter: "STRING_VALUE",
+  // EncodingType: "url",
+  MaxKeys: Number(100),
+  // Prefix: "STRING_VALUE",
+  // ContinuationToken: "STRING_VALUE",
+  // FetchOwner: true || false,
+  // StartAfter: "STRING_VALUE",
+  // RequestPayer: "requester",
+  // ExpectedBucketOwner: "STRING_VALUE",
+  // OptionalObjectAttributes: [ // OptionalObjectAttributesList
+  //   "RestoreStatus",
+  // ],
+};
 
 /**
  * Log all of the object keys in a bucket.
@@ -45,6 +63,39 @@ export const listFiles = async ({ bucketName, pageSize }: { bucketName: string; 
       );
     });
     return objects;
+  } catch (caught) {
+    if (
+      caught instanceof S3ServiceException &&
+      caught.name === "NoSuchBucket"
+    ) {
+      console.error(
+        `Error from S3 while listing objects for "${bucketName}". The bucket doesn't exist.`,
+      );
+    } else if (caught instanceof S3ServiceException) {
+      console.error(
+        `Error from S3 while listing objects for "${bucketName}".  ${caught.name}: ${caught.message}`,
+      );
+    } else {
+      throw caught;
+    }
+  }
+}
+
+type inputParams = {
+  bucketName: string;
+  pageSize: string;
+}
+
+export const listObjects = async({ bucketName, pageSize }: inputParams) => {
+  const command = new ListObjectsV2Command({
+    Bucket: bucketName,
+    MaxKeys: Number(pageSize),
+  });
+  try {
+    const response = await client.send(command);
+    console.log('response', response);
+    // return response.Contents?.map((o) => o.Key).filter((key): key is string => key !== undefined);
+    return response;
   } catch (caught) {
     if (
       caught instanceof S3ServiceException &&
