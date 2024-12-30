@@ -2,48 +2,65 @@
 
 import React, { useEffect, useState } from "react";
 import { listFiles } from "./s3-config";
+import { Button, Table } from "antd";
+import { RedoOutlined } from "@ant-design/icons";
 
 const S3_BUCKET = "daire-photo";
 
+type S3File = {
+  key: string;
+  filename: string;
+};
+
 const FileList = () => {
-
-
-  const getFiles = async () =>  {
+  const getFiles = async () => {
     const s3files = await listFiles({ bucketName: S3_BUCKET, pageSize: "100" });
+    console.log("s3files", s3files);
+    const files = s3files[0];
+
+    const filteredFiles = files?.map((file, index) => ({
+      ["key"]: String(index + 1),
+      ["filename"]: file,
+    }));
+
+    setData(filteredFiles);
+
     setFiles(s3files ? s3files[0] : []);
-  }
+  };
 
   useEffect(() => {
     getFiles();
   }, []);
 
   const [files, setFiles] = useState<string[]>([]);
+  const [data, setData] = useState<S3File[]>();
+
+  const columns = [
+    {
+      title: "File Name",
+      dataIndex: "filename",
+      key: "filename",
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
+    },
+  ];
 
   return (
-    <div>
-      <table style={{ width: "100%", textAlign: "left" }}>
-        <thead>
-          <tr>
-            <th>File Name</th>
-            <th>Download</th>
-          </tr>
-        </thead>
-        <tbody>
-          {files && files.map((file, index) => (
-            <tr key={index}>
-              <td>{file}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button
-        className="rounded-full border border-solid border-transparent transition-colors flex_ items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
+    <div className="">
+      <Table dataSource={data} columns={columns} />
+
+      <Button
+        icon={<RedoOutlined />}
+        type="primary"
         onClick={() => {
           listFiles({ bucketName: S3_BUCKET, pageSize: "10" });
         }}
       >
         Refresh List
-      </button>
+      </Button>
     </div>
   );
 };
