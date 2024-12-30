@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { uploadFile } from "./s3-config";
+import { Upload, Button, UploadProps, UploadFile, GetProp } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 
 const S3_BUCKET = "daire-photo";
 
@@ -9,7 +11,25 @@ const S3Uploader = () => {
   // Progress
   const [progress, setProgress] = useState(0);
   // File handling
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<UploadFile | null>(null);
+
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+
+  type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
+
+  const handleUpload = () => {
+    setUploading(true);
+    console.log("Selected file:", selectedFile);
+    const formData = new FormData();
+    fileList.forEach((file) => {
+      console.log('file', file);
+      formData.append('files[]', file as FileType);
+      onUploadFile(file as FileType);
+    });
+    setUploading(false);
+  };
 
   const handleFileInput = (e: any) => {
     console.log("Selected file:", e.target.files[0]);
@@ -17,26 +37,40 @@ const S3Uploader = () => {
   };
 
   const onUploadFile = (file: File) => {
-    console.log(file);
     uploadFile({ bucketName: S3_BUCKET, key: file.name, file: file });
+  };
+
+  const props: UploadProps = {
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
+    },
+    beforeUpload: (file) => {
+      setFileList([...fileList, file]);
+      setSelectedFile(file);
+
+      return false;
+    },
+    fileList,
   };
 
   return (
     <div>
-      <div>Native SDK File Upload Progress is {progress}%</div>
-      <input type="file" onChange={handleFileInput} />
-      <button
-        className="rounded-full border border-solid border-transparent transition-colors flex_ items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-        onClick={() => {
-          if (selectedFile) {
-            onUploadFile(selectedFile);
-          } else {
-            console.error("No file selected");
-          }
-        }}
+
+      <Upload {...props}>
+        <Button icon={<UploadOutlined />}>Select file</Button>
+      </Upload>
+      <Button
+        type="primary"
+        onClick={handleUpload}
+        disabled={fileList.length === 0}
+        loading={uploading}
+        style={{ marginTop: 16 }}
       >
-        Upload to S3
-      </button>
+        {uploading ? 'Uploading' : 'Start Upload'}
+      </Button>
     </div>
   );
 };
