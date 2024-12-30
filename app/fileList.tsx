@@ -30,7 +30,7 @@ const FileList = () => {
   const getFiles = async () => {
     const s3files = await listFiles({ bucketName: S3_BUCKET, pageSize: "100" });
     console.log("s3files", s3files);
-    const files = s3files[0];
+    const files = s3files![0];
 
     const filteredFiles = files?.map((file, index) => ({
       ["key"]: String(index + 1),
