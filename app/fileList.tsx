@@ -23,6 +23,7 @@ type TableColumn = {
 };
 
 const FileList = () => {
+  const [loading, setLoading] = useState(false);
   /**
    * @deprecated Use getFilesV2 instead
    */
@@ -43,6 +44,7 @@ const FileList = () => {
   };
 
   const getFilesV2 = async () => {
+    setLoading(true);
     const s3files = await listObjects({
       bucketName: S3_BUCKET,
       pageSize: "100",
@@ -56,6 +58,7 @@ const FileList = () => {
     }));
     console.log("filteredFiles", filteredFiles);
     setData(filteredFiles);
+    setLoading(false);
   };
 
   useEffect(() => {
