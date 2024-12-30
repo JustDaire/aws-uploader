@@ -61,6 +61,16 @@ const FileList = () => {
     setLoading(false);
   };
 
+  const deleteFile = async (file: S3File) => {
+    console.log("Deleting file:", file);
+
+    const newData = data?.filter((item) => item.key !== file.key);
+
+    const response = await deleteFileFromS3(S3_BUCKET, file.filename);
+    setData(newData);
+    console.log('response', response);
+  }
+
   useEffect(() => {
     getFilesV2();
   }, []);
@@ -83,8 +93,16 @@ const FileList = () => {
     },
     {
       title: "Action",
-      dataIndex: "action",
-      key: "action",
+      dataIndex: "",
+      key: "x",
+      align: "center",
+      render: (record: S3File) => {
+        return (
+          <Popconfirm title="Sure to delete?" onConfirm={() => deleteFile(record)} >
+            <DeleteOutlined />
+          </Popconfirm>
+        );
+      }
     },
   ];
   const scroll: { x?: number | string; y?: number | string } = {y: 340};
