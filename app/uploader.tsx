@@ -57,8 +57,7 @@ const S3Uploader = () => {
   };
 
   return (
-    <div>
-
+    <div className="flex flex-col sm:flex-row sm:justify-center gap-4" style={{width: '100%'}}>
       <Upload {...props}>
         <Button icon={<UploadOutlined />}>Select file</Button>
       </Upload>
@@ -67,7 +66,7 @@ const S3Uploader = () => {
         onClick={handleUpload}
         disabled={fileList.length === 0}
         loading={uploading}
-        style={{ marginTop: 16 }}
+        className="mt-4 sm:mt-0"
       >
         {uploading ? 'Uploading' : 'Start Upload'}
       </Button>
