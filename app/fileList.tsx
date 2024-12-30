@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { listFiles, listObjects } from "./s3-config";
-import { Button, Table } from "antd";
-import { RedoOutlined } from "@ant-design/icons";
+import { deleteFileFromS3, listFiles, listObjects } from "./s3-config";
+import { Button, Popconfirm, Table, TableProps } from "antd";
+import { DeleteOutlined, RedoOutlined } from "@ant-design/icons";
 
 const S3_BUCKET = "daire-photo";
 
@@ -84,10 +84,17 @@ const FileList = () => {
       key: "action",
     },
   ];
+  const scroll: { x?: number | string; y?: number | string } = {y: 340};
+
+  const tableProps: TableProps = {
+    loading,
+    scroll,
+    tableLayout: "auto",
+  };
 
   return (
     <div className="">
-      <Table dataSource={data} columns={columns} bordered />
+      <Table {...tableProps} dataSource={data} columns={columns} bordered />
 
       <Button
         icon={<RedoOutlined />}
