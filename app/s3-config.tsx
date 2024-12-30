@@ -4,6 +4,7 @@ import {
   S3ServiceException,
   paginateListObjectsV2,
   ListObjectsV2Command,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
 interface UploadFileParams {
@@ -151,3 +152,31 @@ export const uploadFile = async ({
     }
   }
 };
+
+export const deleteFileFromS3 = async (bucketName: string, key: string) => {
+  const command = new DeleteObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+  try {
+    const response = await client.send(command);
+    console.log('response', response);
+    return response;
+  } catch (caught) {
+    if (
+      caught instanceof S3ServiceException &&
+      caught.name === "NoSuchKey"
+    ) {
+      console.error(
+        `Error from S3 while deleting object from ${bucketName}. \
+  The object doesn't exist.`
+      );
+    } else if (caught instanceof S3ServiceException) {
+      console.error(
+        `Error from S3 while deleting object from ${bucketName}.  ${caught.name}: ${caught.message}`
+      );
+    } else {
+      throw caught;
+    }
+  }
+}
