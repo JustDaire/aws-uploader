@@ -13,6 +13,15 @@ type S3File = {
   date: string;
 };
 
+type TableColumn = {
+  title: string;
+  dataIndex: string;
+  key: string;
+  align: "left" | "center" | "right";
+  render?: (record: S3File) => JSX.Element;
+  record?: TableColumn;
+};
+
 const FileList = () => {
   /**
    * @deprecated Use getFilesV2 instead
@@ -56,16 +65,18 @@ const FileList = () => {
   const [files, setFiles] = useState<string[]>([]);
   const [data, setData] = useState<S3File[]>();
 
-  const columns = [
+  const columns: TableColumn[] = [
     {
       title: "File Name",
       dataIndex: "filename",
       key: "filename",
+      align: "left",
     },
     {
       title: "Date",
       dataIndex: "date",
       key: "date",
+      align: "left",
     },
     {
       title: "Action",
