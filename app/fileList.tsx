@@ -105,12 +105,12 @@ const FileList = () => {
       }
     },
   ];
-  const scroll: { x?: number | string; y?: number | string } = {y: 340};
+  const scroll: { x?: number | string | true; y?: number | string } = {x: true, y: 340};
 
   const tableProps: TableProps = {
     loading,
     scroll,
-    tableLayout: "auto",
+    tableLayout: "fixed",
   };
 
   return (

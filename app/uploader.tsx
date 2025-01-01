@@ -57,7 +57,7 @@ const S3Uploader = () => {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-center gap-4" style={{width: '100%'}}>
+    <div className="flex flex-col sm:flex-row sm:justify-center sm:items-start gap-4">
       <Upload {...props}>
         <Button icon={<UploadOutlined />}>Select file</Button>
       </Upload>
