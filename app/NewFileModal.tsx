@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Modal, message, Upload, UploadProps, UploadFile } from "antd";
+import { Button, Modal, message, UploadProps, UploadFile } from "antd";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import Dragger from "antd/es/upload/Dragger";
 import S3Uploader from "./uploader";
