@@ -1,4 +1,3 @@
-import S3Uploader from "./uploader";
 import FileList from "./fileList";
 import Title from "antd/es/typography/Title";
 import NewFileModal from "./NewFileModal";
@@ -9,7 +8,6 @@ export default function Home() {
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <Title>S3 Uploader</Title>
         <NewFileModal label="New File" title="Upload" />
-        <S3Uploader />
         <FileList />
       </main>
     </div>
