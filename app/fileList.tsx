@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { downloadFile, listFilesAPI, deleteFileAPI } from "./api-client";
-import { Button, Popconfirm, Table, TableProps, message } from "antd";
-import { DeleteOutlined, RedoOutlined, DownloadOutlined } from "@ant-design/icons";
+import { downloadFile, listFilesAPI, deleteFileAPI, getPreviewUrl } from "./api-client";
+import { Button, Popconfirm, Table, TableProps, message, Modal } from "antd";
+import { DeleteOutlined, RedoOutlined, DownloadOutlined, EyeOutlined } from "@ant-design/icons";
 import NewFileModal from "./NewFileModal";
 
 const S3_BUCKET = "daire-photo";
@@ -26,6 +26,8 @@ type TableColumn = {
 const FileList = () => {
   const [loading, setLoading] = useState(false);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<S3File | null>(null);
 
   const getFilesV2 = async () => {
     setLoading(true);
@@ -83,6 +85,104 @@ const FileList = () => {
     }
   };
 
+  const handlePreview = async (file: S3File) => {
+    try {
+      setSelectedFile(file);
+      setPreviewModalOpen(true);
+    } catch (error) {
+      console.error('Preview failed:', error);
+      message.error(`Failed to preview ${file.filename}`);
+    }
+  };
+
+  const closePreviewModal = () => {
+    setPreviewModalOpen(false);
+    setSelectedFile(null);
+  };
+
+  const getFileType = (filename: string): string => {
+    const extension = filename.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension)) {
+      return 'image';
+    }
+    if (['pdf'].includes(extension)) {
+      return 'pdf';
+    }
+    if (['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(extension)) {
+      return 'video';
+    }
+    if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(extension)) {
+      return 'audio';
+    }
+    if (['txt', 'md', 'json', 'xml', 'csv', 'log'].includes(extension)) {
+      return 'text';
+    }
+    return 'unknown';
+  };
+
+  const renderPreviewContent = () => {
+    if (!selectedFile) return null;
+
+    const previewUrl = getPreviewUrl(selectedFile.filename);
+    const fileType = getFileType(selectedFile.filename);
+
+    switch (fileType) {
+      case 'image':
+        return (
+          <img
+            src={previewUrl}
+            alt={selectedFile.filename}
+            style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+          />
+        );
+      case 'pdf':
+        return (
+          <iframe
+            src={previewUrl}
+            style={{ width: '100%', height: '70vh', border: 'none' }}
+            title={selectedFile.filename}
+          />
+        );
+      case 'video':
+        return (
+          <video
+            controls
+            style={{ maxWidth: '100%', maxHeight: '70vh' }}
+            src={previewUrl}
+          >
+            Your browser does not support the video tag.
+          </video>
+        );
+      case 'audio':
+        return (
+          <audio controls style={{ width: '100%' }}>
+            <source src={previewUrl} />
+            Your browser does not support the audio tag.
+          </audio>
+        );
+      case 'text':
+        return (
+          <iframe
+            src={previewUrl}
+            style={{ width: '100%', height: '70vh', border: '1px solid #d9d9d9' }}
+            title={selectedFile.filename}
+          />
+        );
+      default:
+        return (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Preview not available for this file type.</p>
+            <Button
+              type="primary"
+              onClick={() => window.open(previewUrl, '_blank')}
+            >
+              Open in New Tab
+            </Button>
+          </div>
+        );
+    }
+  };
+
   useEffect(() => {
     getFilesV2();
   }, []);
@@ -112,10 +212,11 @@ const FileList = () => {
         return (
           <div className="flex gap-2 justify-center">
             <Button
-              type="primary"
+              icon={<EyeOutlined />}
+              type="default"
               size="small"
-              onClick={() => getFilesV2()}
-              title="Refresh file list"
+              onClick={() => handlePreview(record)}
+              title="Preview file"
             >
               Preview
             </Button>
@@ -182,6 +283,29 @@ const FileList = () => {
           </Button>
         </div>
       </div>
+
+      <Modal
+        title={`Preview: ${selectedFile?.filename || ''}`}
+        open={previewModalOpen}
+        onCancel={closePreviewModal}
+        footer={[
+          <Button key="close" onClick={closePreviewModal}>
+            Close
+          </Button>,
+          <Button
+            key="download"
+            type="primary"
+            onClick={() => selectedFile && handleDownload(selectedFile)}
+          >
+            Download
+          </Button>
+        ]}
+        width="80%"
+        style={{ maxWidth: '1200px' }}
+        styles={{ body: { textAlign: 'center' } }}
+      >
+        {renderPreviewContent()}
+      </Modal>
     </div>
   );
 };

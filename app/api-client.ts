@@ -131,6 +131,26 @@ export const downloadFile = async (fileName: string): Promise<void> => {
 };
 
 /**
+ * Preview a file by opening it in a new tab
+ */
+export const previewFile = async (fileName: string): Promise<void> => {
+    try {
+        const previewUrl = `/api/preview?fileName=${encodeURIComponent(fileName)}`;
+        window.open(previewUrl, '_blank');
+    } catch (error) {
+        console.error('Preview failed:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get preview URL for a file
+ */
+export const getPreviewUrl = (fileName: string): string => {
+    return `/api/preview?fileName=${encodeURIComponent(fileName)}`;
+};
+
+/**
  * Upload multiple files sequentially
  */
 export const uploadMultipleFiles = async (
