@@ -1,4 +1,6 @@
 import {
+  GetObjectCommand,
+  NoSuchKey,
   S3Client,
   PutObjectCommand,
   S3ServiceException,
@@ -20,6 +22,45 @@ const client = new S3Client({
 });
 
 /**
+ * Get a single object from a specified S3 bucket.
+ * @param {{ bucketName: string, key: string }}
+ */
+export const getObject = async ({ bucketName, key }: { bucketName: string; key: string; }) => {
+  // const client = new S3Client({});
+
+  try {
+    const response = await client.send(
+      new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      }),
+    );
+    // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
+    if (response.Body) {
+      const str = await response.Body.transformToString();
+      console.log('Object:', str);
+      return str
+    } else {
+      console.error("The response body is undefined.");
+    }
+  } catch (caught) {
+    if (caught instanceof NoSuchKey) {
+      console.error(
+        `Error from S3 while getting object "${key}" from "${bucketName}". No such key exists.`,
+      );
+    } else if (caught instanceof S3ServiceException) {
+      console.error(
+        `Error from S3 while getting object from ${bucketName}.  ${caught.name}: ${caught.message}`,
+      );
+    } else {
+      throw caught;
+    }
+  }
+};
+
+
+
+/**
  * Log all of the object keys in a bucket.
  * @param {{ bucketName: string, pageSize: string }}
  */
@@ -37,12 +78,12 @@ export const listFiles = async ({ bucketName, pageSize }: { bucketName: string; 
         objects.push(page.Contents.map((o) => o.Key).filter((key): key is string => key !== undefined));
       }
     }
-    console.log('objects', objects);
+    // console.log('objects', objects);
     objects.forEach((objectList, pageNum) => {
-      console.log('objectList', objectList);
-      console.log(
-        `Page ${pageNum + 1}\n------\n${objectList.map((o) => `• ${o}`).join("\n")}\n`,
-      );
+      // console.log('objectList', objectList);
+      // console.log(
+      //   `Page ${pageNum + 1}\n------\n${objectList.map((o) => `• ${o}`).join("\n")}\n`,
+      // );
     });
     return objects;
   } catch (caught) {
