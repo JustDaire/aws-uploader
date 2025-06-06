@@ -112,6 +112,14 @@ const FileList = () => {
         return (
           <div className="flex gap-2 justify-center">
             <Button
+              type="primary"
+              size="small"
+              onClick={() => getFilesV2()}
+              title="Refresh file list"
+            >
+              Preview
+            </Button>
+            <Button
               icon={<DownloadOutlined />}
               type="default"
               size="small"
