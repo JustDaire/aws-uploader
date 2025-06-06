@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { deleteFileFromS3, listFiles, listObjects } from "./s3-config";
-import { Button, Popconfirm, Table, TableProps } from "antd";
-import { DeleteOutlined, RedoOutlined } from "@ant-design/icons";
+import { downloadFile, listFilesAPI, deleteFileAPI } from "./api-client";
+import { Button, Popconfirm, Table, TableProps, message } from "antd";
+import { DeleteOutlined, RedoOutlined, DownloadOutlined } from "@ant-design/icons";
+import NewFileModal from "./NewFileModal";
 
 const S3_BUCKET = "daire-photo";
 
@@ -18,64 +19,74 @@ type TableColumn = {
   dataIndex: string;
   key: string;
   align: "left" | "center" | "right";
-  render?: (record: S3File) => JSX.Element;
+  render?: (record: S3File) => React.ReactElement;
   record?: TableColumn;
 };
 
 const FileList = () => {
   const [loading, setLoading] = useState(false);
-  /**
-   * @deprecated Use getFilesV2 instead
-   */
-  const getFiles = async () => {
-    const s3files = await listFiles({ bucketName: S3_BUCKET, pageSize: "100" });
-    console.log("s3files", s3files);
-    const files = s3files![0];
-
-    const filteredFiles = files?.map((file, index) => ({
-      ["key"]: String(index + 1),
-      ["filename"]: file,
-      ["date"]: "",
-    }));
-
-    setData(filteredFiles);
-
-    setFiles(s3files ? s3files[0] : []);
-  };
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
 
   const getFilesV2 = async () => {
     setLoading(true);
-    const s3files = await listObjects({
-      bucketName: S3_BUCKET,
-      pageSize: "100",
-    });
-    console.log("s3files", s3files);
+    try {
+      const response = await listFilesAPI("100");
+      console.log("s3files", response);
 
-    const filteredFiles = s3files?.Contents?.map((file, index) => ({
-      ["key"]: String(index + 1),
-      ["filename"]: file.Key || "",
-      ["date"]: file.LastModified?.toDateString() || "",
-    }));
-    console.log("filteredFiles", filteredFiles);
-    setData(filteredFiles);
-    setLoading(false);
+      const filteredFiles = response.Contents?.map((file, index) => ({
+        ["key"]: String(index + 1),
+        ["filename"]: file.Key || "",
+        ["date"]: file.LastModified ? new Date(file.LastModified).toDateString() : "",
+      }));
+      console.log("filteredFiles", filteredFiles);
+      setData(filteredFiles);
+    } catch (error) {
+      console.error('Failed to load files:', error);
+      message.error('Failed to load files');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteFile = async (file: S3File) => {
     console.log("Deleting file:", file);
 
-    const newData = data?.filter((item) => item.key !== file.key);
+    try {
+      const response = await deleteFileAPI(file.filename);
+      console.log('Delete response:', response);
 
-    const response = await deleteFileFromS3(S3_BUCKET, file.filename);
-    setData(newData);
-    console.log('response', response);
+      // Remove file from local state
+      const newData = data?.filter((item) => item.key !== file.key);
+      setData(newData);
+
+      message.success(`Deleted ${file.filename} successfully`);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      message.error(`Failed to delete ${file.filename}`);
+    }
   }
+
+  const handleDownload = async (file: S3File) => {
+    try {
+      setDownloadingFiles(prev => new Set(prev).add(file.filename));
+      await downloadFile(file.filename);
+      message.success(`Downloaded ${file.filename} successfully`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      message.error(`Failed to download ${file.filename}`);
+    } finally {
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(file.filename);
+        return newSet;
+      });
+    }
+  };
 
   useEffect(() => {
     getFilesV2();
   }, []);
 
-  const [files, setFiles] = useState<string[]>([]);
   const [data, setData] = useState<S3File[]>();
 
   const columns: TableColumn[] = [
@@ -92,20 +103,46 @@ const FileList = () => {
       align: "left",
     },
     {
-      title: "Action",
+      title: "Actions",
       dataIndex: "",
-      key: "x",
+      key: "actions",
       align: "center",
       render: (record: S3File) => {
+        const isDownloading = downloadingFiles.has(record.filename);
         return (
-          <Popconfirm title="Sure to delete?" onConfirm={() => deleteFile(record)} >
-            <DeleteOutlined />
-          </Popconfirm>
+          <div className="flex gap-2 justify-center">
+            <Button
+              icon={<DownloadOutlined />}
+              type="default"
+              size="small"
+              loading={isDownloading}
+              onClick={() => handleDownload(record)}
+              title="Download file"
+            >
+              {isDownloading ? 'Downloading...' : 'Download'}
+            </Button>
+            <Popconfirm
+              title="Sure to delete?"
+              onConfirm={() => deleteFile(record)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                icon={<DeleteOutlined />}
+                type="default"
+                danger
+                size="small"
+                title="Delete file"
+              >
+                Delete
+              </Button>
+            </Popconfirm>
+          </div>
         );
       }
     },
   ];
-  const scroll: { x?: number | string | true; y?: number | string } = {x: true, y: 340};
+  const scroll: { x?: number | string | true; y?: number | string } = { x: true, y: 340 };
 
   const tableProps: TableProps = {
     loading,
@@ -114,19 +151,29 @@ const FileList = () => {
   };
 
   return (
-    <div className="">
-      <Table {...tableProps} dataSource={data} columns={columns} bordered />
+    <div className="w-full max-w-full px-4 py-6 overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        <Table
+          {...tableProps}
+          dataSource={data}
+          columns={columns}
+          bordered
+          className="mb-4"
+        />
 
-      <Button
-        icon={<RedoOutlined />}
-        type="primary"
-        onClick={() => {
-          // listObjects({ bucketName: S3_BUCKET, pageSize: "10" });
-          getFilesV2();
-        }}
-      >
-        Refresh List
-      </Button>
+        <div className="flex justify-center gap-4">
+          <NewFileModal label="New File" title="Upload" />
+          <Button
+            icon={<RedoOutlined />}
+            type="primary"
+            onClick={() => {
+              getFilesV2();
+            }}
+          >
+            Refresh List
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
