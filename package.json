@@ -7,20 +7,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-db": "node scripts/create-dynamodb-table.js"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
     "@aws-sdk/client-s3": "^3.717.0",
+    "@aws-sdk/client-dynamodb": "^3.717.0",
+    "@aws-sdk/lib-dynamodb": "^3.717.0",
     "antd": "^5.22.7",
     "next": "^15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.3",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "15.1.3",
     "postcss": "^8.4.49",
