@@ -4,8 +4,8 @@ import { S3Client, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s
 // Configure S3 client - credentials should be server-side only
 const s3Client = new S3Client({
     credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+        accessKeyId: process.env.NEXT_PUBLIC_S3_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.NEXT_PUBLIC_S3_SECRET_ACCESS_KEY || '',
     },
     region: process.env.S3_REGION || 'eu-west-1',
 });
